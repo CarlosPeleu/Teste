@@ -14,9 +14,13 @@
    <div class="box">
        <div class="box-header">
             <a href="{{route('balance.deposit')}}" class="btn btn-primary">Deposito</a>
-            <a href="{{route('balance.deposit')}}" class="btn btn-danger">Recaregar</a>
+           @if($amount>0)
+            <a href="{{route('balance.withdrawn')}}" class="btn btn-danger">Sacar</a>
+            <a href="{{route('balance.transfer')}}" class="btn btn-info">Transferir</a>
+           @endif
        </div>
        <div class="box-body">
+           @include('admin.alerts.alerts')
            <div class="small-box bg-green">
                 <div class="inner">
                   <h3>R${{number_format($amount,2,',','')}}</h3>
