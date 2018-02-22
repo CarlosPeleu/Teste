@@ -20,11 +20,12 @@
        <div class="box-body">
              @include('admin.alerts.alerts')
            <p><strong>Recebedor: </strong>{{$sender->name}}</p>
+           <p><strong>Saldo: </strong>R$ {{number_format($balance->amout,2)}}</p>
            <form method="POST" action="{{route('transfer.valor.store')}}">
                {!! csrf_field() !!}
                <div class="form-group">
                     <input type="hidden" name="sender_id"  value="{{$sender->id}}">
-                    <input type="text" name="balder" placeholder="Valor" class="form-control">
+                    <input type="text" name="vl_recarga" placeholder="Valor" class="form-control">
                </div>
                <div class="form-group">
                    <button type="submit" class="btn btn-success">Transferir</button>

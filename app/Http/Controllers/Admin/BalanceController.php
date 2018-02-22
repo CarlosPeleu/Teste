@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use App\Http\Requests\MoneyValidation;
 use App\Http\Controllers\Controller;
 use App\Models\Balance;
+use App\Models\Historic;
 use App\User;
 
 class BalanceController extends Controller{
+
+    private $totalPage = 10;
 
     public function index(){
         $balance = auth()->user()->balance;
@@ -59,12 +62,37 @@ class BalanceController extends Controller{
                         ->back()
                         ->with('error', 'Usuário não transferir para você mesmo!');
 
-        return view('admin.balance.transfer-confirm', compact('sender'));
+        $balance = auth()->user()->balance;
+        return view('admin.balance.transfer-confirm', compact('sender', 'balance'));
     }
 
-    public function transferConfirm(){
-        dd('teste');
-        return view('admin.balance.transfer-confirm');
+    public function historic(Historic $historic){
 
+        $historics = auth()->user()->historic()->with(['userSender'])->paginate($this->totalPage);
+        $types = $historic->type();
+        return view('admin.balance.historic', compact('historics','types'));
+
+    }
+
+    public function transferValorStore(MoneyValidation $request, User $user){
+       if (!$sender = $user->find($request->sender_id))
+           return redirect()
+                        ->route('admin.balance')
+                        ->with('success', 'Remetente não encontrado');
+
+       $balance = auth()->user()->balance()->firstOrCreate([]);
+       $arResult = $balance->transfer($request->vl_recarga, $sender);
+
+        if ($arResult['success'])
+            return redirect()->route('admin.balance')->with('success',$arResult['message']);
+
+        return redirect()->back()->with('error',$arResult['message']);
+    }
+
+    public function searchHistoric(Request $request, Historic $historic){
+        $dataForm = $request->all();
+        $historics = $historic->search($dataForm, 2);
+        $types = $historic->type();
+        return view('admin.balance.historic', compact('historics','types','dataForm'));
     }
 }

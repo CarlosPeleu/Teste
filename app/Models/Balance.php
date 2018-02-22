@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use DB;
 use App\Models\Historic;
+use App\User;
 
 
 class Balance extends Model
@@ -76,5 +77,67 @@ class Balance extends Model
                     'message' => 'Deposito não foi realizado!'
             ];
         }
+    }
+
+    public function transfer(float $value, User $sender){
+        if ($this->amout < $value){
+            return[
+                'success' => false,
+                'message' => 'Saldo insulficiente',
+            ];
+        }
+
+        DB::beginTransaction();
+
+    /*
+     * Atualização do saldo de quem está fazendo a transferência
+     * */
+        $varAmount = $this->amout?$this->amout : 0;
+        $this->amout -= number_format($value,2, '.','');
+        $transfer = $this->save();
+
+        $arHistoric = auth()->user()->historic()->create([
+            'type' => 'T',
+            'amout' => $value,
+            'total_before'=> $varAmount,
+            'total_after'=> $this->amout,
+            'date' => '2018/02/02',
+            'user_id_transaction' => $sender->id
+        ]);
+
+    /*
+     * Atualização do saldo de quem recebe
+     * */
+        $senderBalance = $sender->balance()->firstOrCreate([]);
+        $totalAmount = $senderBalance->amout?$senderBalance->amout : 0;
+        $senderBalance->amout += number_format($value,2, '.','');
+        $transferSender = $senderBalance->save();
+
+        $historicSender = $sender->historic()->create([
+            'type' => 'I',
+            'amout' => $value,
+            'total_before'=> $totalAmount,
+            'total_after'=> $senderBalance->amout,
+            'date' => '2018/02/02',
+            'user_id_transaction' => auth()->user()->id
+        ]);
+
+
+
+        if ($transfer && $arHistoric && $transferSender && $historicSender){
+            DB::commit();
+            return[
+                'success' => true,
+                'message' => 'transferencia realizada com sucesso!'
+            ];
+        }
+
+        DB::rollback();
+        return[
+                'success' => false,
+                'message' => 'Falha ao Retirar'
+        ];
+
+
     }
 }
